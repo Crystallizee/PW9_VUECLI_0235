@@ -9,12 +9,24 @@
       </v-card-title>
       <v-data-table :headers="headers" :items="todos" :search="search">
         <template v-slot:[`item.actions`]="{ item }">
-          <v-btn small class="mr-2" @click="editItem(item)">Edit</v-btn>
-          <v-btn small @click="deleteItem(item)">delete</v-btn>
+          <v-icon small class="mr-2" color="red" @click="editItem(item)"> mdi-pencil </v-icon>
+          <v-icon small color="green" @click="deleteItem(item)"> mdi-delete </v-icon>
         </template>
       </v-data-table>
     </v-card>
-
+    <!-- v-dialog for delete -->
+    <v-dialog v-model="dialogDelete" max-width="500px">
+      <v-card>
+        <v-card-title class="text-h5">Are you sure you want to delete this item?</v-card-title>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="closeDelete">Cancel</v-btn>
+          <v-btn color="blue darken-1" text @click="deleteItemConfirm">OK</v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <!-- v-dialog for create task -->
     <v-dialog v-model="dialog" persistent max-width="600px">
       <v-card>
         <v-card-title>
@@ -44,6 +56,8 @@ export default {
     return {
       search: null,
       dialog: false,
+      dialogDelete: false,
+      editOrcreate: 0,
       headers: [
         {
           text: "Task",
@@ -77,17 +91,50 @@ export default {
   },
 
   methods: {
-    save() {
-      this.todos.push(this.formTodo);
-      this.resetForm();
-      this.dialog = false;
-    },
+        save() {
+            if(this.editOrcreate == 0) {
+                this.todos.push(this.formTodo);
+                this.resetForm();
+            }
+            else if(this.editOrcreate == 1) {
+                this.todos[this.index].task = this.formTodo.task;
+                this.todos[this.index].priority = this.formTodo.priority;
+                this.todos[this.index].note = this.formTodo.note;
+                this.resetForm();
+                this.editOrcreate = 0;
+            }
+            this.dialog = false;
+        },
     cancel() {
       this.resetForm();
       this.dialog = false;
     },
     resetForm() {
       this.formTodo = { task: null, priority: null, note: null };
+    },
+    deleteItem(item) {
+      this.editedIndex = this.todos.indexOf(item);
+      this.editedItem = Object.assign({}, item);
+      this.dialogDelete = true;
+    },
+    editItem(item){
+      this.index = this.todos.indexOf(item);
+      this.editOrcreate = 1;
+      this.dialog = true;
+      this.formTodo.task = item.task;
+      this.formTodo.priority = item.priority;
+      this.formTodo.note = item.note;
+    },
+    closeDelete() {
+      this.dialogDelete = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+    deleteItemConfirm() {
+      this.todos.splice(this.editedIndex, 1);
+      this.closeDelete();
     },
   },
 };
